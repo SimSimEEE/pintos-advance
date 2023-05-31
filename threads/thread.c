@@ -370,6 +370,13 @@ void thread_set_nice(int nice UNUSED)
 {
 	/* 현재 스레드의 nice값을 변경하는 함수를 구현하다. 해당 작업중에 인터럽트는 비활성화 해야 한다. */
 	/* 현재 스레드의 nice 값을 변경한다. nice 값 변경 후에 현재 스레드의 우선순위를 재계산 하고 우선순위에 의해 스케줄링 한다. */
+	enum intr_level old_level;
+	old_level = intr_disable();
+
+	mlfqs_priority(thread_current());
+
+	intr_set_level(old_level);
+	return nice;
 }
 
 /* Returns the current thread's nice value. */
@@ -406,7 +413,7 @@ int thread_get_recent_cpu(void)
 	enum intr_level old_level;
 	old_level = intr_disable();
 
-	mlfqs_recent_cpu();
+	mlfqs_recent_cpu(thread_current());
 	int recent_cpu = thread_current()->recent_cpu * 100;
 
 	intr_set_level(old_level);
