@@ -10,6 +10,7 @@
 #include "threads/palloc.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "include/devices/timer.h"
 #include "threads/fixed_point.h"
 #include "intrinsic.h"
 #ifdef USERPROG
@@ -356,14 +357,16 @@ void thread_set_priority(int new_priority) {
 	}
 }
 void mlfqs_priority(struct thread *t){
+	ASSERT(t != idle_thread);
 	if(t != idle_thread){
-		t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+		t->priority = fp_to_int(add_mixed(div_mixed(t->recent_cpu, -4), PRI_MAX - t->nice * 2));
 	}
 }
 void mlfqs_recent_cpu(struct thread *t){
 	ASSERT(t != idle_thread);
 
-	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+	t->recent_cpu = add_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),t->recent_cpu),t->nice);
+
 }
 void mlfqs_load_avg(void){
 	struct list_elem *e;
@@ -375,12 +378,12 @@ void mlfqs_load_avg(void){
 		}
 	}
 
-	load_avg = (59/60) * load_avg + (1/60) * cnt;
+	load_avg = add_mixed(mult_mixed(load_avg,(59/60)),((1/60) * cnt));
 }
 void mlfqs_increment(void){
 	ASSERT(thread_current() != idle_thread);
 
-	thread_current()->recent_cpu++;
+	thread_current()->recent_cpu = add_mixed(thread_current()->recent_cpu,1);
 }
 void mlfqs_recalc (void){
 	struct list_elem *e;
@@ -388,8 +391,8 @@ void mlfqs_recalc (void){
 	for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e)){
 		struct thread *cur = list_entry(e,struct thread,elem);
 		if (cur != idle_thread){
-			cur->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * cur->recent_cpu + cur->nice;
-			cur->priority = PRI_MAX - (cur->recent_cpu / 4) - (cur->nice * 2);
+			cur->recent_cpu = add_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),cur->recent_cpu),cur->nice);
+			cur->priority = PRI_MAX - sub_mixed(div_mixed(cur->recent_cpu,4),(cur->nice * 2));
 		}
 	}
 }
@@ -397,7 +400,6 @@ void mlfqs_recalc (void){
 int
 thread_get_priority (void) {
 	return thread_current ()->priority;
-	
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -411,7 +413,14 @@ thread_set_nice (int nice UNUSED) {
 	우선순위에 의해 스케줄링 한다. */
 	enum intr_level old_level;
 
-	
+	old_level = intr_disable ();
+
+	thread_current()->nice = nice;
+
+	mlfqs_priority(thread_current());
+
+	thread_set_priority(thread_current());
+	intr_set_level (old_level);
 }
 
 /* Returns the current thread's nice value. */
@@ -436,14 +445,10 @@ thread_get_load_avg (void) {
 	/* TODO: Your implementation goes here */
 	/* load_avg에 100을 곱해서 반환 한다.
 	해당 과정중에 인터럽트는 비활성되어야 한다. */
-	enum intr_level old_level;
-	old_level = intr_disable ();
-
-	mlfqs_load_avg();
-
-	int load_avg = load_avg * 100;
-
-	intr_set_level (old_level);
+	if (timer_ticks() % TIMER_FREQ == 0){
+		mlfqs_load_avg();
+		load_avg = fp_to_int_round(mult_mixed(load_avg,100));
+	}
 	return load_avg;
 }
 
@@ -456,7 +461,7 @@ thread_get_recent_cpu (void) {
 
 	mlfqs_recent_cpu(thread_current());
 
-	int recent_cpu = thread_current()->recent_cpu * 100;
+	int recent_cpu = fp_to_int_round(mult_mixed(thread_current()->recent_cpu,100));
 
 	intr_set_level (old_level);
 	return recent_cpu;

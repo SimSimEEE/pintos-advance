@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "fixed_point.h": "c"
+        "fixed_point.h": "c",
+        "string.h": "c",
+        "interrupt.h": "c",
+        "timer.h": "c",
+        "__threading_support": "c"
     }
 }
