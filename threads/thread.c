@@ -746,7 +746,7 @@ void mlfqs_priority(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*priority계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+	t->priority = sub_mix(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)),(t->nice * 2));
 }
 
 void mlfqs_recent_cpu(struct thread *t)
@@ -755,7 +755,7 @@ void mlfqs_recent_cpu(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+	t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),t->recent_cpu),t->nice);
 }
 
 void mlfqs_load_avg(void)
@@ -771,8 +771,11 @@ void mlfqs_load_avg(void)
 	}
 
 	/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
-	load_avg = (59 / 60) * load_avg + (1 / 60) * cnt;
+	load_avg =  add_fp(mult_mixed(load_avg, (59 / 60)),div_mixed((1 / 60),cnt));
 	/* load_avg 는 0 보다 작아질 수 없다. */
+	if (load_avg < 0){
+		load_avg = 0;
+	}
 }
 
 void mlfqs_increment(void)
@@ -795,8 +798,8 @@ void mlfqs_recalc(void)
 		struct thread *t = list_entry(e, struct thread, elem);
 		if (t != idle_thread)
 		{
-			t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
-			t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+			t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),t->recent_cpu),t->nice);
+			t->priority = sub_mix(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)),(t->nice * 2));
 		}
 	}
 }

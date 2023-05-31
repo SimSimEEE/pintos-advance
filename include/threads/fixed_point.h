@@ -47,6 +47,7 @@ int add_mixed(int x, int n) /* FP와 int의 덧셈 */
 {
     return x + n * F;
 }
+
 int sub_fp(int x, int y) /* FP의 뺄셈(x-y) */
 {
     return x - y;
