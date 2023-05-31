@@ -708,7 +708,7 @@ void test_max_priority(void)
 void mlfqs_priority(struct thread *t)
 {
 	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
-	ASSERT(t != idle_thread)
+	ASSERT(t != idle_thread);
 
 	/*priority계산식을 구현 (fixed_point.h의 계산함수 이용)*/
 	t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice *2); 
@@ -717,8 +717,10 @@ void mlfqs_priority(struct thread *t)
 void mlfqs_recent_cpu(struct thread *t)
 {
 	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
-	ASSERT(t != idle_thread)
+	ASSERT(t != idle_thread);
+
 	/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
+	t->recent_cpu = (2 * load_avg) / (2*load_avg + 1) * t->recent_cpu + t->nice;
 }
 
 void mlfqs_load_avg(void)
