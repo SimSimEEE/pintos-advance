@@ -758,7 +758,9 @@ void mlfqs_recalc(void)
 
 	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
 	{
-		struct thread *e_thread = list_entry(e, struct thread, elem);
-		if (e_thread != idle_thread)
-			e_thread->priority = PRI_MAX - (e_thread->recent_cpu / 4) - (e_thread->nice * 2);
+		struct thread *t = list_entry(e, struct thread, elem);
+		if (t!= idle_thread){
+			t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+			t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+		}
 }
