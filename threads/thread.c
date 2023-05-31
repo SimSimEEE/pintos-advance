@@ -388,14 +388,20 @@ int thread_get_nice(void)
 /* Returns 100 times the system load average. */
 int thread_get_load_avg(void)
 {
-	/* TODO: Your implementation goes here */
-	return 0;
+	/* load_avg에 100을 곱해서 반환 한다. 해당 과정중에 인터럽트는 비활성되어야 한다. */
+	enum intr_level old_level;
+	old_level = intr_disable();
+
+	int load_avg = load_avg * 100;
+
+	intr_set_level(old_level);
+	return load_avg;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int thread_get_recent_cpu(void)
 {
-	/* TODO: Your implementation goes here */
+	/* recent_cpu 에 100을 곱해서 반환 한다. 해당 과정중에 인터럽트는 비활성되어야 한다. */
 	return 0;
 }
 
