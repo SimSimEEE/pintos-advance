@@ -97,6 +97,8 @@ struct thread {
 	struct lock *wait_on_lock;			/* wait on lock */
 	struct list donations;				/* Priority donation list */
 	struct list_elem d_elem;			/* donation list element. */
+	int nice;	/* nice level */
+	int recent_cpu; /* recent_cpu */
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -151,6 +153,10 @@ void do_iret (struct intr_frame *tf);
 void test_max_priority(void);
 static bool cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
 
-
+void mlfqs_priority(struct thread *t);
+void mlfqs_recent_cpu(struct thread *t);
+void mlfqs_load_avg(void);
+void mlfqs_increment(void);
+void mlfqs_recalc (void);
 
 #endif /* threads/thread.h */

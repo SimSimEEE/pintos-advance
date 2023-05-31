@@ -10,6 +10,7 @@
 #include "threads/palloc.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed_point.h"
 #include "intrinsic.h"
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -23,7 +24,10 @@
 /* Random value for basic thread
    Do not modify this value. */
 #define THREAD_BASIC 0xd42df210
-
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+int load_avg;
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -65,6 +69,11 @@ static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
 static void do_schedule(int status);
 static void schedule (void);
+static void mlfqs_priority(struct thread *t);
+static void mlfqs_recent_cpu(struct thread *t);
+static void mlfqs_load_avg(void);
+static void mlfqs_increment(void);
+static void mlfqs_recalc (void);
 static tid_t allocate_tid (void);
 
 void thread_sleep(int64_t ticks);
@@ -145,7 +154,7 @@ thread_start (void) {
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+	load_avg = LOAD_AVG_DEFAULT;
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
 
@@ -341,7 +350,44 @@ void thread_set_priority(int new_priority) {
 	refresh_priority();
 	test_max_priority();
 }
+void mlfqs_priority(struct thread *t){
+	if(t != idle_thread){
+		t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+	}
+}
+void mlfqs_recent_cpu(struct thread *t){
+	ASSERT(t != idle_thread);
 
+	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+}
+void mlfqs_load_avg(void){
+	struct list_elem *e;
+	size_t cnt = 0;
+	for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e)){
+		struct thread *cur = list_entry(e,struct thread,elem);
+		if (cur != idle_thread){
+			cnt++;
+		}
+	}
+
+	load_avg = (59/60) * load_avg + (1/60) * cnt;
+}
+void mlfqs_increment(void){
+	ASSERT(thread_current() != idle_thread);
+
+	thread_current()->recent_cpu++;
+}
+void mlfqs_recalc (void){
+	struct list_elem *e;
+	size_t cnt = 0;
+	for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e)){
+		struct thread *cur = list_entry(e,struct thread,elem);
+		if (cur != idle_thread){
+			cur->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * cur->recent_cpu + cur->nice;
+			cur->priority = PRI_MAX - (cur->recent_cpu / 4) - (cur->nice * 2);
+		}
+	}
+}
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) {
@@ -437,6 +483,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+	t->nice = NICE_DEFAULT;
+	t->recent_cpu = RECENT_CPU_DEFAULT;
 
 	/* Priority initialization */
 	t->origin_priority = priority;
