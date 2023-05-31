@@ -346,9 +346,14 @@ thread_yield (void) {
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority) {
-    thread_current()->origin_priority = new_priority;
-	refresh_priority();
-	test_max_priority();
+	if(!thread_mlfqs){
+		thread_current()->origin_priority = new_priority;
+		refresh_priority();
+		test_max_priority();
+	}
+	else{
+		thread_current()->priority = new_priority;
+	}
 }
 void mlfqs_priority(struct thread *t){
 	if(t != idle_thread){
@@ -392,33 +397,69 @@ void mlfqs_recalc (void){
 int
 thread_get_priority (void) {
 	return thread_current ()->priority;
+	
 }
 
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED) {
 	/* TODO: Your implementation goes here */
+	/* 현제 스레드의 nice값을 변경하는 함수를 구현하다.
+	해당 작업중에 인터럽트는 비활성화 해야 한다. */
+	/* 현제 스레드의 nice 값을 변경한다.
+	nice 값 변경 후에 현재 스레드의 우선순위를 재계산 하고
+	우선순위에 의해 스케줄링 한다. */
+	enum intr_level old_level;
+
+	
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	/* 현재 스레드의 nice 값을 반환한다.
+	해당 작업중에 인터럽트는 비활성되어야 한다. */
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	int nice = thread_current()->nice;
+
+	intr_set_level (old_level);
+
+	return nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	/* load_avg에 100을 곱해서 반환 한다.
+	해당 과정중에 인터럽트는 비활성되어야 한다. */
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	mlfqs_load_avg();
+
+	int load_avg = load_avg * 100;
+
+	intr_set_level (old_level);
+	return load_avg;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	mlfqs_recent_cpu(thread_current());
+
+	int recent_cpu = thread_current()->recent_cpu * 100;
+
+	intr_set_level (old_level);
+	return recent_cpu;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
