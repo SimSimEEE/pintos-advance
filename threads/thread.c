@@ -5,6 +5,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "devices/timer.h"
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -372,7 +373,7 @@ void thread_set_nice(int nice UNUSED)
 	/* 현재 스레드의 nice 값을 변경한다. nice 값 변경 후에 현재 스레드의 우선순위를 재계산 하고 우선순위에 의해 스케줄링 한다. */
 	enum intr_level old_level;
 	old_level = intr_disable();
-
+	thread_current()->nice = nice;
 	mlfqs_priority(thread_current());
 
 	intr_set_level(old_level);
@@ -398,9 +399,10 @@ int thread_get_load_avg(void)
 	/* load_avg에 100을 곱해서 반환 한다. 해당 과정중에 인터럽트는 비활성되어야 한다. */
 	enum intr_level old_level;
 	old_level = intr_disable();
-
 	mlfqs_load_avg();
-	int load_avg = load_avg * 100;
+
+	if (timer_ticks() % 100 == 0)
+		load_avg = mult_mixed(load_avg, 100);
 
 	intr_set_level(old_level);
 	return load_avg;
@@ -414,7 +416,7 @@ int thread_get_recent_cpu(void)
 	old_level = intr_disable();
 
 	mlfqs_recent_cpu(thread_current());
-	int recent_cpu = thread_current()->recent_cpu * 100;
+	int recent_cpu = mult_mixed(thread_current()->recent_cpu, 100);
 
 	intr_set_level(old_level);
 	return recent_cpu;
@@ -746,7 +748,7 @@ void mlfqs_priority(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*priority계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->priority = sub_mix(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)),(t->nice * 2));
+	t->priority = sub_mixed(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)), (t->nice * 2));
 }
 
 void mlfqs_recent_cpu(struct thread *t)
@@ -755,7 +757,7 @@ void mlfqs_recent_cpu(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),t->recent_cpu),t->nice);
+	t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg, 2), add_mixed(mult_mixed(load_avg, 2), 1)), t->recent_cpu), t->nice);
 }
 
 void mlfqs_load_avg(void)
@@ -771,9 +773,10 @@ void mlfqs_load_avg(void)
 	}
 
 	/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
-	load_avg =  add_fp(mult_mixed(load_avg, (59 / 60)),div_mixed((1 / 60),cnt));
+	load_avg = add_fp(mult_mixed(load_avg, (59 / 60)), div_mixed((1 / 60), cnt));
 	/* load_avg 는 0 보다 작아질 수 없다. */
-	if (load_avg < 0){
+	if (load_avg < 0)
+	{
 		load_avg = 0;
 	}
 }
@@ -781,7 +784,7 @@ void mlfqs_load_avg(void)
 void mlfqs_increment(void)
 {
 	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
-	ASSERT(thread_curren() != idle_thread);
+	ASSERT(thread_current() != idle_thread);
 
 	/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
 	thread_current()->recent_cpu++;
@@ -798,8 +801,8 @@ void mlfqs_recalc(void)
 		struct thread *t = list_entry(e, struct thread, elem);
 		if (t != idle_thread)
 		{
-			t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg,2),add_mixed(mult_mixed(load_avg,2),1)),t->recent_cpu),t->nice);
-			t->priority = sub_mix(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)),(t->nice * 2));
+			t->recent_cpu = mult_mixed(mult_fp(div_fp(mult_mixed(load_avg, 2), add_mixed(mult_mixed(load_avg, 2), 1)), t->recent_cpu), t->nice);
+			t->priority = sub_mixed(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)), (t->nice * 2));
 		}
 	}
 }

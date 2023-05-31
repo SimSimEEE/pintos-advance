@@ -31,9 +31,7 @@ int fp_to_int_round(int x) /* FP를 int로 전환(반올림) */
 int fp_to_int(int x) /* FP를 int로 전환(버림) */
 {
     if (x >= 0)
-    {
         return (x + F / 2) / F;
-    }
     if (x <= 0)
         return (x - F / 2) / F;
 }
