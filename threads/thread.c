@@ -347,10 +347,12 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-	if (thread_mlfqs){
+	if (thread_mlfqs)
+	{
 		thread_current()->priority = new_priority;
 	}
-	else{
+	else
+	{
 		thread_current()->origin_priority = new_priority;
 		refresh_priority();
 		test_max_priority();
@@ -366,14 +368,21 @@ int thread_get_priority(void)
 /* Sets the current thread's nice value to NICE. */
 void thread_set_nice(int nice UNUSED)
 {
-	/* TODO: Your implementation goes here */
+	/* 현재 스레드의 nice값을 변경하는 함수를 구현하다. 해당 작업중에 인터럽트는 비활성화 해야 한다. */
+	/* 현재 스레드의 nice 값을 변경한다. nice 값 변경 후에 현재 스레드의 우선순위를 재계산 하고 우선순위에 의해 스케줄링 한다. */
 }
 
 /* Returns the current thread's nice value. */
 int thread_get_nice(void)
 {
-	/* TODO: Your implementation goes here */
-	return 0;
+	/* 현재 스레드의 nice 값을 반환한다.해당 작업중에 인터럽트는 비활성되어야 한다. */
+	enum intr_level old_level;
+	old_level = intr_disable();
+
+	int nice = thread_current()->nice;
+
+	intr_set_level(old_level);
+	return nice;
 }
 
 /* Returns 100 times the system load average. */
@@ -752,7 +761,6 @@ void mlfqs_increment(void)
 
 	/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
 	thread_current()->recent_cpu++;
-
 }
 
 void mlfqs_recalc(void)
@@ -764,8 +772,9 @@ void mlfqs_recalc(void)
 	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
 	{
 		struct thread *t = list_entry(e, struct thread, elem);
-		if (t!= idle_thread){
+		if (t != idle_thread)
+		{
 			t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
 			t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
 		}
-}
+	}
