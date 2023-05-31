@@ -402,7 +402,13 @@ int thread_get_load_avg(void)
 int thread_get_recent_cpu(void)
 {
 	/* recent_cpu 에 100을 곱해서 반환 한다. 해당 과정중에 인터럽트는 비활성되어야 한다. */
-	return 0;
+	enum intr_level old_level;
+	old_level = intr_disable();
+
+	int recent_cpu = thread_current()->recent_cpu * 100;
+
+	intr_set_level(old_level);
+	return recent_cpu;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
