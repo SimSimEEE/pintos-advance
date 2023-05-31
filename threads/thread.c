@@ -392,6 +392,7 @@ int thread_get_load_avg(void)
 	enum intr_level old_level;
 	old_level = intr_disable();
 
+	mlfqs_load_avg();
 	int load_avg = load_avg * 100;
 
 	intr_set_level(old_level);
@@ -404,7 +405,7 @@ int thread_get_recent_cpu(void)
 	/* recent_cpu 에 100을 곱해서 반환 한다. 해당 과정중에 인터럽트는 비활성되어야 한다. */
 	enum intr_level old_level;
 	old_level = intr_disable();
-
+		
 	int recent_cpu = thread_current()->recent_cpu * 100;
 
 	intr_set_level(old_level);
