@@ -406,8 +406,4 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 
 	while (!list_empty (&cond->waiters))
 		cond_signal (cond, lock);
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 743cdb97baf13d1ded2561ba8f7285e1a5ac1aea
