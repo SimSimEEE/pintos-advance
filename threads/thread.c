@@ -711,7 +711,7 @@ void mlfqs_priority(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*priority계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice *2); 
+	t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
 }
 
 void mlfqs_recent_cpu(struct thread *t)
@@ -720,12 +720,23 @@ void mlfqs_recent_cpu(struct thread *t)
 	ASSERT(t != idle_thread);
 
 	/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
-	t->recent_cpu = (2 * load_avg) / (2*load_avg + 1) * t->recent_cpu + t->nice;
+	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
 }
 
 void mlfqs_load_avg(void)
 {
+	struct list_elem *e;
+	size_t cnt = 0;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
+	{
+		struct thread *e_thread = list_entry(e, struct thread, elem);
+		if (e_thread != idle_thread)
+			cnt++;
+	}
+
 	/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
+	load_avg = (59 / 60) * load_avg + (1 / 60) * cnt;
 	/* load_avg 는 0 보다 작아질 수 없다. */
 }
 
