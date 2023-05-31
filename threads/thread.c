@@ -18,6 +18,8 @@
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
 int load_avg;
+void mlfqs_priority (struct thread *t);
+void mlfqs_recent_cpu (struct thread *t);
 
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -678,3 +680,15 @@ void test_max_priority(void) {
 	}
 }
 
+void mlfqs_priority (struct thread *t)
+{
+	ASSERT(t != idle_thread);
+	
+	t->priority = int_to_fp(t->priority);
+}
+
+void mlfqs_recent_cpu (struct thread *t)
+{
+/* 해당 스레드가 idle_thread 가 아닌지 검사 */
+/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
+}
