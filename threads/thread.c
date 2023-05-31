@@ -347,9 +347,14 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-	thread_current()->origin_priority = new_priority;
-	refresh_priority();
-	test_max_priority();
+	if (thread_mlfqs){
+		thread_current()->priority = new_priority;
+	}
+	else{
+		thread_current()->origin_priority = new_priority;
+		refresh_priority();
+		test_max_priority();
+	}
 }
 
 /* Returns the current thread's priority. */
