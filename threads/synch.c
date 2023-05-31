@@ -252,7 +252,6 @@ void donate_priority(void){
             struct thread *curr_holder = curr->wait_on_lock->holder;
             curr_holder->priority = curr->priority;
             curr = curr_holder;
-    }
 }
 
 
@@ -407,4 +406,8 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 
 	while (!list_empty (&cond->waiters))
 		cond_signal (cond, lock);
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 743cdb97baf13d1ded2561ba8f7285e1a5ac1aea
