@@ -102,6 +102,8 @@ struct thread {
 	/*NOTE: advanced scheduler*/
 	int nice;
 	int recent_cpu;
+	struct list every_list;
+	struct list_elem every_elem;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -160,8 +162,6 @@ void mlfqs_recent_cpu (struct thread *t);
 void mlfqs_load_avg (void);
 void mlfqs_increment (void);
 void mlfqs_recalc (void);
-
-
 
 
 #endif /* threads/thread.h */
