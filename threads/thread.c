@@ -20,6 +20,10 @@
 int load_avg;
 void mlfqs_priority (struct thread *t);
 void mlfqs_recent_cpu (struct thread *t);
+void mlfqs_load_avg (void);
+void mlfqs_increment (void);
+void mlfqs_recalc (void);
+
 
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -680,15 +684,31 @@ void test_max_priority(void) {
 	}
 }
 
-void mlfqs_priority (struct thread *t)
-{
+void mlfqs_priority (struct thread *t) {
 	ASSERT(t != idle_thread);
 	
 	t->priority = int_to_fp(t->priority);
 }
 
-void mlfqs_recent_cpu (struct thread *t)
+void mlfqs_recent_cpu (struct thread *t) {
+	ASSERT(t != idle_thread);
+
+	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+}
+
+void mlfqs_load_avg (void){
+/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
+/* load_avg 는 0 보다 작아질 수 없다. */
+	load_avg = (59/60) * load_avg + (1/60) * r;
+}
+
+void mlfqs_increment (void)
 {
 /* 해당 스레드가 idle_thread 가 아닌지 검사 */
-/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
+/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
+}
+
+void mlfqs_recalc (void)
+{
+/* 모든 thread의 recent_cpu와 priority값 재계산 한다. */
 }
