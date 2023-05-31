@@ -234,18 +234,16 @@ void lock_acquire(struct lock *lock)
 	ASSERT(!intr_context());
 	ASSERT(!lock_held_by_current_thread(lock));
 
-	if (!thread_mlfqs)
-	{
-		struct thread *curr = thread_current();
+	struct thread *curr = thread_current();
 
-		curr->wait_on_lock = NULL;
-		if (lock->holder)
-		{
-			curr->wait_on_lock = lock;
-			list_insert_ordered(&lock->holder->donations, &curr->d_elem, cmp_donation_priority, NULL);
-			donate_priority();
-		}
+	curr->wait_on_lock = NULL;
+	if (lock->holder && !thread_mlfqs)
+	{
+		curr->wait_on_lock = lock;
+		list_insert_ordered(&lock->holder->donations, &curr->d_elem, cmp_donation_priority, NULL);
+		donate_priority();
 	}
+
 	sema_down(&lock->semaphore);
 	lock->holder = thread_current();
 }
@@ -256,8 +254,15 @@ void donate_priority(void)
 	while (curr->wait_on_lock)
 	{
 		struct thread *curr_holder = curr->wait_on_lock->holder;
-		curr_holder->priority = curr->priority;
-		curr = curr_holder;
+		if (curr->priority > curr_holder->priority)
+		{
+			curr_holder->priority = curr->priority;
+			curr = curr_holder;
+		}
+		else
+		{
+			break;
+		}
 	}
 }
 
@@ -291,11 +296,10 @@ void lock_release(struct lock *lock)
 	ASSERT(lock != NULL);
 	ASSERT(lock_held_by_current_thread(lock));
 
+	struct thread *curr = thread_current();
+	struct list_elem *curr_elem = list_begin(&curr->donations);
 	if (!thread_mlfqs)
 	{
-		struct thread *curr = thread_current();
-		struct list_elem *curr_elem = list_begin(&curr->donations);
-
 		while (curr_elem != list_end(&curr->donations))
 		{
 			struct thread *tmp = list_entry(curr_elem, struct thread, d_elem);
