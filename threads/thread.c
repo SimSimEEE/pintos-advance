@@ -351,9 +351,16 @@ thread_yield (void) {
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority) {
-    thread_current()->origin_priority = new_priority;
-	refresh_priority();
-	test_max_priority();
+	if (thread_mlfqs)
+	{
+		thread_current()->priority = new_priority;
+	}
+	else
+	{
+		thread_current()->origin_priority = new_priority;
+		refresh_priority();
+		test_max_priority();
+	}
 }
 
 /* Returns the current thread's priority. */
@@ -684,31 +691,63 @@ void test_max_priority(void) {
 	}
 }
 
-void mlfqs_priority (struct thread *t) {
+void mlfqs_priority(struct thread *t)
+{
+	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
 	ASSERT(t != idle_thread);
-	
-	t->priority = int_to_fp(t->priority);
+
+	/*priority계산식을 구현 (fixed_point.h의 계산함수 이용)*/
+	t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
 }
 
-void mlfqs_recent_cpu (struct thread *t) {
+void mlfqs_recent_cpu(struct thread *t)
+{
+	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
 	ASSERT(t != idle_thread);
 
+	/*recent_cpu계산식을 구현 (fixed_point.h의 계산함수 이용)*/
 	t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
 }
 
-void mlfqs_load_avg (void){
-/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
-/* load_avg 는 0 보다 작아질 수 없다. */
-	load_avg = (59/60) * load_avg + (1/60) * r;
+void mlfqs_load_avg(void)
+{
+	struct list_elem *e;
+	size_t cnt = 0;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
+	{
+		struct thread *e_thread = list_entry(e, struct thread, elem);
+		if (e_thread != idle_thread)
+			cnt++;
+	}
+
+	/* load_avg계산식을 구현 (fixed_point.h의 계산함수 이용) */
+	load_avg = (59 / 60) * load_avg + (1 / 60) * cnt;
+	/* load_avg 는 0 보다 작아질 수 없다. */
 }
 
-void mlfqs_increment (void)
+void mlfqs_increment(void)
 {
-/* 해당 스레드가 idle_thread 가 아닌지 검사 */
-/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
+	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
+	ASSERT(thread_curren() != idle_thread);
+
+	/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
+	thread_current()->recent_cpu++;
 }
 
-void mlfqs_recalc (void)
+void mlfqs_recalc(void)
 {
-/* 모든 thread의 recent_cpu와 priority값 재계산 한다. */
+	/* 모든 thread의 recent_cpu와 priority값 재계산 한다. */
+	struct list_elem *e;
+	size_t cnt = 0;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
+	{
+		struct thread *t = list_entry(e, struct thread, elem);
+		if (t != idle_thread)
+		{
+			t->recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * t->recent_cpu + t->nice;
+			t->priority = PRI_MAX - (t->recent_cpu / 4) - (t->nice * 2);
+		}
+	}
 }
