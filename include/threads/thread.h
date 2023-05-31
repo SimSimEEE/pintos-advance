@@ -100,6 +100,10 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
+	// NOTE: For Advanced Scheduler
+	int nice;
+	int recent_cpu;
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -151,6 +155,12 @@ void do_iret (struct intr_frame *tf);
 void test_max_priority(void);
 static bool cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
 
+// NOTE: For Advanced Scheduler
+void mlfqs_priority (struct thread *t);
+void mlfqs_recent_cpu (struct thread *t);
+void mlfqs_load_avg (void);
+void mlfqs_increment (void);
+void mlfqs_recalc (void);
 
 
 #endif /* threads/thread.h */
