@@ -11,6 +11,14 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "intrinsic.h"
+
+// NOTE: For Advanced Scheduler
+#include "threads/fixed_point.h"
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+int load_avg;
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -145,7 +153,7 @@ thread_start (void) {
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+	load_avg = LOAD_AVG_DEFAULT;
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
 
@@ -669,3 +677,4 @@ void test_max_priority(void) {
 		}
 	}
 }
+
