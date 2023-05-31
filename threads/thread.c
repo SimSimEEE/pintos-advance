@@ -743,10 +743,22 @@ void mlfqs_load_avg(void)
 void mlfqs_increment(void)
 {
 	/* 해당 스레드가 idle_thread 가 아닌지 검사 */
+	ASSERT(thread_curren() != idle_thread);
+
 	/* 현재 스레드의 recent_cpu 값을 1증가 시킨다. */
+	thread_current()->recent_cpu++;
+
 }
 
 void mlfqs_recalc(void)
 {
 	/* 모든 thread의 recent_cpu와 priority값 재계산 한다. */
+	struct list_elem *e;
+	size_t cnt = 0;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
+	{
+		struct thread *e_thread = list_entry(e, struct thread, elem);
+		if (e_thread != idle_thread)
+			e_thread->priority = PRI_MAX - (e_thread->recent_cpu / 4) - (e_thread->nice * 2);
 }
