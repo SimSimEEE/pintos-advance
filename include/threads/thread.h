@@ -99,6 +99,9 @@ struct thread {
 	struct list_elem d_elem;			/* donation list element. */
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
+	/*NOTE: advanced scheduler*/
+	int nice;
+	int recent_cpu;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -141,15 +144,23 @@ void thread_yield (void);
 int thread_get_priority (void);
 void thread_set_priority (int);
 
+void do_iret (struct intr_frame *tf);
+
+void test_max_priority(void);
+static bool cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+
+/*NOTE: ADVANCED SCHEDUER*/
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-void do_iret (struct intr_frame *tf);
+void mlfqs_priority (struct thread *t);
+void mlfqs_recent_cpu (struct thread *t);
+void mlfqs_load_avg (void);
+void mlfqs_increment (void);
+void mlfqs_recalc (void);
 
-void test_max_priority(void);
-static bool cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
 
 
 
